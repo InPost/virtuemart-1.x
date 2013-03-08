@@ -5,6 +5,8 @@
 <?php
 if( !defined( '_VALID_MOS' ) && !defined( '_JEXEC' ) ) die( 'Direct Access to '.basename(__FILE__).' is not allowed.' );
 
+require_once(CLASSPATH ."shipping/easypack24/helpers/easypack24Helper.php");
+
 class easypack24 {
 
 	var $classname = "easypack24";
@@ -139,6 +141,8 @@ class easypack24 {
                     return true;
             }
         }
+        $_SESSION['easypack24']['parcel_size'] = $parcelSize;
+        $_SESSION['easypack24']['user_email'] = $dbu->f("user_email");
 
         // get machines
         require_once(CLASSPATH ."shipping/easypack24/helpers/easypack24Helper.php");
@@ -177,6 +181,7 @@ class easypack24 {
                 }
             }
             $_SESSION['easypack24']['parcelTargetAllMachinesId'] = $parcelTargetAllMachinesId;
+            $_SESSION['easypack24']['parcelTargetAllMachinesDetail'] = $parcelTargetAllMachinesDetail;
         }
 
 
@@ -218,7 +223,7 @@ class easypack24 {
         <a href="#" onclick="openMap(); return false;">Map</a>&nbsp|&nbsp<input type="checkbox" name="show_all_machines"> Show terminals in other cities
         <br>
         <br>&nbsp; &nbsp; &nbsp; &nbsp;<b>Mobile e.g. 523045856 *: </b>
-        <br>&nbsp; &nbsp; &nbsp; &nbsp;<input type='text' name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:@$dbu->f("phone_2"); ?>' />
+        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:@$dbu->f("phone_2"); ?>' />
 
         <script type="text/javascript">
             function user_function(value) {
@@ -262,6 +267,79 @@ class easypack24 {
 		echo('</table>');
 		return true;
 	}
+
+    function save_rate_info(&$d) {
+        global $vmLogger;
+
+        if(!isset($_SESSION['easypack24']['parcelTargetAllMachinesDetail'])){
+            return;
+        }
+
+        $parcel_target_machine_id = explode("|", urldecode(urldecode($d['shipping_rate_id'])) );
+        $parcel_target_machine_id = explode("/", $parcel_target_machine_id[2]);
+
+        $order_id = @$d['order_id'];
+        $parcel_id = null;
+        $parcel_status = 'Created';
+        $parcel_detail = array(
+            //'cod_amount' => Mage::getStoreConfig('carriers/easypack24/cod_amount'),
+            'description' => '',
+            //'insurance_amount' => Mage::getStoreConfig('carriers/easypack24/insurance_amount'),
+            'receiver' => array(
+                'email' => @$_SESSION['easypack24']['user_email'],
+                'phone' => @$parcel_target_machine_id[1],
+            ),
+            'size' => @$_SESSION['easypack24']['parcel_size'],
+            //'source_machine' => $data['parcel_source_machine'],
+            'tmp_id' => easypack24Helper::generate(4, 15),
+        );
+        $parcel_target_machine_id = @$parcel_target_machine_id[0];
+        $parcel_target_machine_detail = @$_SESSION['easypack24']['parcelTargetAllMachinesDetail'][$parcel_target_machine_id];
+
+
+        // create Inpost parcel
+        $params = array(
+            'url' => API_URL.'parcels',
+            'token' => API_KEY,
+            'methodType' => 'POST',
+            'params' => array(
+                //'cod_amount' => '',
+                'description' => '',
+                //'insurance_amount' => '',
+                'receiver' => array(
+                    'phone' => str_replace('mob:', '', @$parcel_detail['receiver']['phone']),
+                    'email' => @$parcel_detail['receiver']['email']
+                ),
+                'size' => @$parcel_detail['size'],
+                //'source_machine' => '',
+                'tmp_id' => @$parcel_detail['tmp_id'],
+                'target_machine' => $parcel_target_machine_id
+            )
+        );
+
+        $conf =& JFactory::getConfig();
+        $parcelApi = easypack24Helper::connectEasypack24($params);
+
+        if(@$parcelApi['info']['redirect_url'] != ''){
+            $tmp = explode('/', @$parcelApi['info']['redirect_url']);
+            $parcel_id = $tmp[count($tmp)-1];
+            $fields = array(
+                'order_id' => $order_id,
+                'parcel_id' => $parcel_id,
+                'parcel_status' => $parcel_status,
+                'parcel_detail' => json_encode($parcel_detail),
+                'parcel_target_machine_id' => $parcel_target_machine_id,
+                'parcel_target_machine_detail' => json_encode($parcel_target_machine_detail),
+            );
+            $db = new ps_DB;
+            $db->buildQuery('INSERT', $conf->getValue('config.dbprefix').'order_shipping_easypack24', $fields );
+            if( $db->query() === false ) {
+            }
+            //$db->next_record();
+        }else{
+            $vmLogger->err( 'Cannot create parcel' ) ;
+        }
+    }
 
 	function get_rate( &$d ) {
         $shipping_rate_id = $d["shipping_rate_id"];
