@@ -1,4 +1,4 @@
-<?php 
+<?php
 if( !defined( '_VALID_MOS' ) && !defined( '_JEXEC' ) ) die( 'Direct Access to '.basename(__FILE__).' is not allowed.' );
 /**
 * Header file for the shop administration.
@@ -332,6 +332,10 @@ if( vmIsJoomla('1.0') && strstr( $_SERVER['PHP_SELF'], 'index3.php')) {
 					<ul>
 					<li class="item-smenu vmicon vmicon-16-content">
 					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=order.order_list") ?>"><?php echo $VM_LANG->_('PHPSHOP_ORDER_LIST_MNU') ?></a>
+					<hr />
+					</li>
+					<li class="item-smenu vmicon vmicon-16-content">
+					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=easypack24.easypack24_list") ?>">InPost Parcel Lockers 24/7</a>
 					<hr />
 					</li>
 					<li class="item-smenu vmicon vmicon-16-content">

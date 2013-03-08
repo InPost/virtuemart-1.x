@@ -298,10 +298,27 @@ class MENU_virtuemart {
 	function LISTS_SPECIAL_TASKS( $page ) {
 		global $mosConfig_live_site, $VM_LANG, $product_id, $vmIcons;
 		switch( $page ) {
-		
+
+
+			case "easypack24.easypack24_list":
+				$alt = "&nbsp;". 'Parcel stickers in pdf format';
+                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassStickers' );
+                vmMenuBar::spacer();
+
+                $alt = "&nbsp;". 'Parcel refresh status';
+                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassRefreshStatus' );
+                vmMenuBar::spacer();
+
+                $alt = "&nbsp;". 'Parcel cancel';
+                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassCancel' );
+                vmMenuBar::spacer();
+
+                vmMenuBar::divider();
+                break;
+
 			case "product.product_list":
 			
-				if( empty($_REQUEST['product_parent_id']) ) { 
+				if( empty($_REQUEST['product_parent_id']) ) {
 					// add new attribute
 					$alt = "&nbsp;". $VM_LANG->_('PHPSHOP_ATTRIBUTE_FORM_MNU');
 					vmMenuBar::custom( "", "product.product_attribute_form", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt );
@@ -310,17 +327,17 @@ class MENU_virtuemart {
 				// Go to Price list
 				$alt = "&nbsp;". $VM_LANG->_('PHPSHOP_PRICE_LIST_MNU');
 				vmMenuBar::custom( "", "product.product_price_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt );
-				
+
 				vmMenuBar::spacer();
-		
+
 				// add product type
 				$alt = "&nbsp;". $VM_LANG->_('PHPSHOP_PRODUCT_PRODUCT_TYPE_FORM_MNU');
 				vmMenuBar::custom( "", "product.product_product_type_form", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt );
-				
+
 				vmMenuBar::spacer();
-		
+
 				/*** Adding an item is only pssible, if the product has attributes ***/
-				if (ps_product::product_has_attributes( $product_id ) ) { 
+				if (ps_product::product_has_attributes( $product_id ) ) {
 					// Add Item
 					$alt = "&nbsp;". $VM_LANG->_('PHPSHOP_PRODUCT_FORM_NEW_ITEM_LBL');
 					vmMenuBar::custom( "", "product.product_child_form", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt );
