@@ -1,5 +1,5 @@
 <script type="text/javascript" src="<?php echo URL?>/administrator/components/com_virtuemart/classes/shipping/easypack24/js/jquery-1.6.4.min.js"></script>
-<script type="text/javascript" src="<?php echo URL?>/administrator/components/com_virtuemart/classes/shipping/easypack24/js/easypack24/noconflict.js"></script>
+<!--<script type="text/javascript" src="--><?php //echo URL?><!--/administrator/components/com_virtuemart/classes/shipping/easypack24/js/easypack24/noconflict.js"></script>-->
 <script type="text/javascript" src="https://geowidget.inpost.co.uk/dropdown.php?field_to_update=name&field_to_update2=address&user_function=user_function"></script>
 <script type="text/javascript">
     function user_function(value) {

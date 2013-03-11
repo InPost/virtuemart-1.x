@@ -49,7 +49,7 @@ class vm_ps_easypack24 {
                         $vmLogger->err('Parcel '.$key.' '.$error);
                     }
                 }
-                return;
+                #return;
             }
 
             $parcelApi = easypack24Helper::connectEasypack24(array(

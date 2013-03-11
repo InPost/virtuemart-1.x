@@ -1,5 +1,5 @@
 <script type="text/javascript" src="<?php echo URL?>/administrator/components/com_virtuemart/classes/shipping/easypack24/js/jquery-1.6.4.min.js"></script>
-<script type="text/javascript" src="<?php echo URL?>/administrator/components/com_virtuemart/classes/shipping/easypack24/js/easypack24/noconflict.js"></script>
+<!--<script type="text/javascript" src="--><?php //echo URL?><!--/administrator/components/com_virtuemart/classes/shipping/easypack24/js/easypack24/noconflict.js"></script>-->
 <script type="text/javascript" src="https://geowidget.inpost.co.uk/dropdown.php?field_to_update=name&field_to_update2=address&user_function=user_function"></script>
 
 <?php
@@ -29,7 +29,7 @@ class easypack24 {
 		}
 
 		$dbu = new ps_DB;
-		$q  = "SELECT country,zip,user_email, city, phone_2 FROM #__{vm}_user_info WHERE user_info_id = '". $d["ship_to_info_id"] . "'";
+		$q  = "SELECT user_id, country, zip,user_email, city, phone_2 FROM #__{vm}_user_info WHERE user_info_id = '". $d["ship_to_info_id"] . "'";
 		$dbu->query($q);
 		if (!$dbu->next_record()) {
 		}
@@ -43,7 +43,7 @@ class easypack24 {
         $Total_Shipping_Handling =$Order_Handling_Fee;
         // $shipping_rate_id = urlencode($id_string);
         //$_SESSION[$shipping_rate_id] = 1;
-        $shipping = urlencode( $this->classname."|Easypack24||".number_format($Total_Shipping_Handling,2)."|8");
+        $shipping = urlencode( $this->classname."|easypack24||".number_format($Total_Shipping_Handling,2)."|8");
 
         // check weight
         if(@$d['weight'] != 0 && $d['weight'] > MAX_WEIGHT){
@@ -142,7 +142,15 @@ class easypack24 {
             }
         }
         $_SESSION['easypack24']['parcel_size'] = $parcelSize;
-        $_SESSION['easypack24']['user_email'] = $dbu->f("user_email");
+
+        if($dbu->f("user_email") != ''){
+            $_SESSION['easypack24']['user_email'] = $dbu->f("user_email");
+        }else{
+            $dbi = new ps_DB;
+            $q  = "SELECT user_email FROM #__{vm}_user_info WHERE user_id = '". $dbu->f("user_id") . "' and user_email IS NOT NULL";
+            $dbi->query($q);
+            $_SESSION['easypack24']['user_email'] = $dbi->f("user_email");
+        }
 
         // get machines
         require_once(CLASSPATH ."shipping/easypack24/helpers/easypack24Helper.php");
@@ -179,11 +187,10 @@ class easypack24 {
                 }elseif($machine->address->city == $dbu->f("city")){
                     $machines[$key] = $machine;
                 }
+                $_SESSION['easypack24']['parcelTargetAllMachinesId'] = $parcelTargetAllMachinesId;
+                $_SESSION['easypack24']['parcelTargetAllMachinesDetail'] = $parcelTargetAllMachinesDetail;
             }
-            $_SESSION['easypack24']['parcelTargetAllMachinesId'] = $parcelTargetAllMachinesId;
-            $_SESSION['easypack24']['parcelTargetAllMachinesDetail'] = $parcelTargetAllMachinesDetail;
         }
-
 
         $parcelTargetMachinesId = array();
         $parcelTargetMachinesDetail = array();
@@ -208,12 +215,14 @@ class easypack24 {
             $defaultSelect = 'no terminals in your city';
         }
 
-?>
-        <input type="radio" name="shipping_rate_id" id="easypack24" value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?>
+        $checked = (preg_match('/^easypack24/', @$d["shipping_rate_id"], $matches)) ? "checked=\"checked\"" : "";
+
+        ?>
+        <input type="radio" name="shipping_rate_id" id="easypack24" <?php echo $checked; ?> value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?>
         <br>&nbsp; &nbsp; &nbsp; &nbsp; <select id="shipping_easypack24" onChange="choose_from_dropdown()" name="shipping_easypack24[parcel_target_machine_id]">
         <option value='' <?php if(@$_POST['shipping_easypack24']['parcel_target_machine_id'] == ''){ echo "selected=selected";} ?>><?php echo $defaultSelect;?></option>
             <?php foreach(@$parcelTargetMachinesId as $key => $parcelTargetMachineId): ?>
-                <option value='<?php echo $key ?>' <?php if(@$_POST['shipping_easypack24']['parcel_target_machine_id'] == $parcelTargetMachineId){ echo "selected=selected";} ?>><?php echo @$parcelTargetMachineId;?></option>
+                <option value='<?php echo $key ?>' <?php if(@$_POST['shipping_easypack24']['parcel_target_machine_id'] == $key){ echo "selected=selected";} ?>><?php echo @$parcelTargetMachineId;?></option>
             <?php endforeach; ?>
         </select>
         <input type="hidden" id="name" name="name" disabled="disabled" />
@@ -223,7 +232,7 @@ class easypack24 {
         <a href="#" onclick="openMap(); return false;">Map</a>&nbsp|&nbsp<input type="checkbox" name="show_all_machines"> Show terminals in other cities
         <br>
         <br>&nbsp; &nbsp; &nbsp; &nbsp;<b>Mobile e.g. 523045856 *: </b>
-        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:@$dbu->f("phone_2"); ?>' />
+        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' onChange="choose_from_dropdown()" name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:@$dbu->f("phone_2"); ?>' />
 
         <script type="text/javascript">
             function user_function(value) {
@@ -257,6 +266,37 @@ class easypack24 {
             function choose_from_dropdown() {
                 document.getElementById('easypack24').value = 'easypack24%7Ceasypack24%7C'+document.getElementById('shipping_easypack24').value+'/mob:'+document.getElementById('easypack24_phone').value+'%7C<?php echo number_format($Total_Shipping_Handling,2)."%7C8";?>';
             }
+
+            jQuery(document).ready(function(){
+                jQuery('input[type="checkbox"][name="show_all_machines"]').click(function(){
+                    var machines_list_type = jQuery(this).is(':checked');
+
+                    if(machines_list_type == true){
+                        //alert('all machines');
+                        var machines = {
+                            '' : 'Select Machine..',
+                            <?php foreach($_SESSION['easypack24']['parcelTargetAllMachinesId'] as $key => $parcelTargetAllMachineId): ?>
+                                '<?php echo $key ?>' : '<?php echo addslashes($parcelTargetAllMachineId) ?>',
+                                <?php endforeach; ?>
+                        };
+                    }else{
+                        //alert('criteria machines');
+                        var machines = {
+                            '' : 'Select Machine..',
+                            <?php foreach($_SESSION['easypack24']['parcelTargetMachinesId'] as $key => $parcelTargetMachineId): ?>
+                                '<?php echo $key ?>' : '<?php echo addslashes($parcelTargetMachineId) ?>',
+                                <?php endforeach; ?>
+                        };
+                    }
+
+                    jQuery('#shipping_easypack24 option').remove();
+                    jQuery.each(machines, function(val, text) {
+                        jQuery('#shipping_easypack24').append(
+                                jQuery('<option></option>').val(val).html(text)
+                        );
+                    });
+                });
+            });
 
         </script>
 
@@ -295,7 +335,6 @@ class easypack24 {
         );
         $parcel_target_machine_id = @$parcel_target_machine_id[0];
         $parcel_target_machine_detail = @$_SESSION['easypack24']['parcelTargetAllMachinesDetail'][$parcel_target_machine_id];
-
 
         // create Inpost parcel
         $params = array(
@@ -475,36 +514,3 @@ class easypack24 {
 
 }
 ?>
-
-<script type="text/javascript">
-    jQuery(document).ready(function(){
-        jQuery('input[type="checkbox"][name="show_all_machines"]').click(function(){
-            var machines_list_type = jQuery(this).is(':checked');
-
-            if(machines_list_type == true){
-                //alert('all machines');
-                var machines = {
-                    '' : 'Select Machine..',
-                <?php foreach($_SESSION['easypack24']['parcelTargetAllMachinesId'] as $key => $parcelTargetAllMachineId): ?>
-                    '<?php echo $key ?>' : '<?php echo addslashes($parcelTargetAllMachineId) ?>',
-                    <?php endforeach; ?>
-                };
-            }else{
-                //alert('criteria machines');
-                var machines = {
-                    '' : 'Select Machine..',
-                <?php foreach($_SESSION['easypack24']['parcelTargetMachinesId'] as $key => $parcelTargetMachineId): ?>
-                    '<?php echo $key ?>' : '<?php echo addslashes($parcelTargetMachineId) ?>',
-                    <?php endforeach; ?>
-                };
-            }
-
-            jQuery('#shipping_easypack24 option').remove();
-            jQuery.each(machines, function(val, text) {
-                jQuery('#shipping_easypack24').append(
-                        jQuery('<option></option>').val(val).html(text)
-                );
-            });
-        });
-    });
-</script>
