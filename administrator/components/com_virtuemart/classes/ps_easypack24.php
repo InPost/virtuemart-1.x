@@ -78,7 +78,7 @@ class vm_ps_easypack24 {
                     'sticker_creation_date' => date('Y-m-d H:i:s')
                 );
                 $db = new ps_DB;
-                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE parcel_id='".$parcelId."'");
+                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE id='".$parcelId."'");
                 $db->query();
                 $countSticker++;
             }
