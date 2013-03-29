@@ -13,6 +13,7 @@ class easypack24Helper
             array(
                 'url' => $params['url'],
                 'token' => $params['token'],
+                'ds' => '?',
                 'methodType' => $params['methodType'],
                 'params' => $params['params']
             ),
@@ -29,9 +30,9 @@ class easypack24Helper
                     foreach($params['params'] as $field_name => $field_value){
                         $getParams .= $field_name.'='.urlencode($field_value).'&';
                     }
-                    curl_setopt($ch, CURLOPT_URL, $params['url'].'?token='.$params['token'].'&'.$getParams);
+                    curl_setopt($ch, CURLOPT_URL, $params['url'].$params['ds'].'token='.$params['token'].'&'.$getParams);
                 }else{
-                    curl_setopt($ch, CURLOPT_URL, $params['url'].'?token='.$params['token']);
+                    curl_setopt($ch, CURLOPT_URL, $params['url'].$params['ds'].'token='.$params['token']);
                 }
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
                 break;
@@ -40,13 +41,13 @@ class easypack24Helper
                 $string = json_encode($params['params']);
                 #$string = $params['params'];
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: POST') );
-                curl_setopt($ch, CURLOPT_URL, $params['url'].'?token='.$params['token']);
+                curl_setopt($ch, CURLOPT_URL, $params['url'].$params['ds'].'token='.$params['token']);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $string);
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($string))
+                        'Content-Type: application/json',
+                        'Content-Length: ' . strlen($string))
                 );
                 break;
 
@@ -54,13 +55,13 @@ class easypack24Helper
                 $string = json_encode($params['params']);
                 #$string = $params['params'];
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-HTTP-Method-Override: PUT') );
-                curl_setopt($ch, CURLOPT_URL, $params['url'].'?token='.$params['token']);
+                curl_setopt($ch, CURLOPT_URL, $params['url'].$params['ds'].'token='.$params['token']);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $string);
                 curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($string))
+                        'Content-Type: application/json',
+                        'Content-Length: ' . strlen($string))
                 );
                 break;
 

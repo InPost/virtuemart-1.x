@@ -17,7 +17,8 @@ $count = "SELECT count(*) as num_rows FROM ".$db_prefix."order_shipping_easypack
 $q = "(id > 0) AND ";
 
 if (!empty($keyword)) {
-    $q .= "(parcel_target_machine_id LIKE '%$keyword%') ";
+    $q .= "(parcel_id LIKE '%$keyword%' ";
+    $q .= "OR parcel_target_machine_id LIKE '%$keyword%' ";
     $q .= "OR parcel_detail LIKE '%$keyword%' ";
     $q .= "OR parcel_target_machine_detail LIKE '%$keyword%' ";
     $q .= ") AND ";

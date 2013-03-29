@@ -12,8 +12,7 @@ class easypack24 {
 	var $classname = "easypack24";
 
 	function list_rates( &$d ) {
-
-		global $total, $tax_total, $CURRENCY_DISPLAY;
+		global $total, $tax_total, $CURRENCY_DISPLAY, $vmLogger;
 
 		$cart = $_SESSION['cart'];
 
@@ -31,8 +30,14 @@ class easypack24 {
 		$dbu = new ps_DB;
 		$q  = "SELECT user_id, country, zip,user_email, city, phone_2 FROM #__{vm}_user_info WHERE user_info_id = '". $d["ship_to_info_id"] . "'";
 		$dbu->query($q);
-		if (!$dbu->next_record()) {
+
+        if (!$dbu->next_record()) {
 		}
+
+        $phone_from_db = $dbu->f("phone_2");
+        if(!preg_match('/^[1-9]{1}\d{8}$/', $phone_from_db)){
+            $phone_from_db = null;
+        }
 		$Order_Destination_Postcode = $dbu->f("zip");
 
 		$Order_WeightKG = $d['weight'] ;
@@ -45,13 +50,31 @@ class easypack24 {
         //$_SESSION[$shipping_rate_id] = 1;
         $shipping = urlencode( $this->classname."|easypack24||".number_format($Total_Shipping_Handling,2)."|8");
 
+
+        // check countries
+        $dbe = new ps_DB;
+        $q = "SELECT country_3_code, country_2_code FROM #__{vm}_country";
+        $dbe->query($q);
+        $all_countries_2 = $dbe->loadAssocList('country_2_code');
+        $all_countries_3 = $dbe->loadAssocList('country_3_code');
+
+        if(strlen($dbu->f('country')) == 2){
+            $country = $all_countries_2[$dbu->f('country')]['country_2_code'];
+        }else{
+            $country = $all_countries_3[$dbu->f('country')]['country_2_code'];
+        }
+
+        if($country == 'GB'){$country = 'UK';}
+
+        if($country != ALLOWED_COUNTRY){
+            return false;
+        }
+
         // check weight
         if(@$d['weight'] != 0 && $d['weight'] > MAX_WEIGHT){
             ?>
                 <input type="radio" name="shipping_rate_id" DISABLED id="easypack24" value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?> ( <font color="red"> Max weight is: <?php echo MAX_WEIGHT ?>, Actual: <?php echo $d['weight'] ?> </font>);
             <?php
-            echo $html;
-            echo('</table>');
             return true;
         }
 
@@ -136,8 +159,6 @@ class easypack24 {
                 ?>
                 <input type="radio" name="shipping_rate_id" DISABLED id="easypack24" value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?> ( <font color="red"> Max dimension is: <?php echo MAX_DIMENSION_C ?></font>);
                 <?php
-                    echo $html;
-                    echo('</table>');
                     return true;
             }
         }
@@ -215,7 +236,13 @@ class easypack24 {
             $defaultSelect = 'no terminals in your city';
         }
 
-        $checked = (preg_match('/^easypack24/', @$d["shipping_rate_id"], $matches)) ? "checked=\"checked\"" : "";
+        $is_checked = false;
+        if(preg_match('/^easypack24/', @$d["shipping_rate_id"], $matches)){
+            $checked = "checked=\"checked\"";
+            $is_checked = true;
+        }else{
+            $checked = "";
+        };
 
         ?>
         <input type="radio" name="shipping_rate_id" id="easypack24" <?php echo $checked; ?> value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?>
@@ -232,7 +259,7 @@ class easypack24 {
         <a href="#" onclick="openMap(); return false;">Map</a>&nbsp|&nbsp<input type="checkbox" name="show_all_machines"> Show terminals in other cities
         <br>
         <br>&nbsp; &nbsp; &nbsp; &nbsp;<b>Mobile e.g. 523045856 *: </b>
-        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' onChange="choose_from_dropdown()" name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:@$dbu->f("phone_2"); ?>' />
+        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' onChange="choose_from_dropdown()" name='shipping_easypack24[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="easypack24_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_easypack24']['receiver_phone']?@$_POST['shipping_easypack24']['receiver_phone']:$phone_from_db; ?>' />
 
         <script type="text/javascript">
             function user_function(value) {
@@ -296,15 +323,29 @@ class easypack24 {
                         );
                     });
                 });
+                <?php
+                if($is_checked){
+                    ?>
+                    jQuery('input[type="radio"][name="shipping_rate_id"]').attr("checked", false);
+                    jQuery('input[type="radio"][id="easypack24"]').attr("checked", true);
+                    <?php
+                }
+                if(isset($_POST['shipping_easypack24']['parcel_target_machine_id']) && $_POST['shipping_rate_id'] == ''){
+                    ?>
+                    jQuery('input[type="radio"][name="shipping_rate_id"]').attr("checked", false);
+                    jQuery('input[type="radio"][id="easypack24"]').attr("checked", true);
+                    <?php
+                }
+                ?>
             });
 
         </script>
 
         <?php
-		$_SESSION[$shipping_rate_id] = 1;
+		$_SESSION[$shipping] = 1;
 
-		echo $html;
-		echo('</table>');
+		//echo $html;
+		//echo('</table>');
 		return true;
 	}
 
@@ -360,8 +401,25 @@ class easypack24 {
         $parcelApi = easypack24Helper::connectEasypack24($params);
 
         if(@$parcelApi['info']['redirect_url'] != ''){
-            $tmp = explode('/', @$parcelApi['info']['redirect_url']);
-            $parcel_id = $tmp[count($tmp)-1];
+
+            // get machines
+            $parcelApi = easypack24Helper::connectEasypack24(
+                array(
+                    'url' => $parcelApi['info']['redirect_url'],
+                    'token' => API_KEY,
+                    'ds' => '&',
+                    'methodType' => 'GET',
+                    'params' => array(
+                    )
+                )
+            );
+
+            if(!isset($parcelApi['result']->id)){
+                return false;
+            }
+
+            $parcel_id = $parcelApi['result']->id;
+
             $fields = array(
                 'order_id' => $order_id,
                 'parcel_id' => $parcel_id,
@@ -372,9 +430,80 @@ class easypack24 {
             );
             $db = new ps_DB;
             $db->buildQuery('INSERT', $conf->getValue('config.dbprefix').'order_shipping_easypack24', $fields );
-            if( $db->query() === false ) {
+            $db->query();
+
+            $dba = new ps_DB;
+            $q  = "SELECT COUNT(*) as count FROM #__{vm}_order_user_info WHERE order_id = '". $order_id . "' AND address_type='ST'";
+            $dba->query($q);
+
+            $street_address = $parcel_target_machine_detail['address']['street'].' '.$parcel_target_machine_detail['address']['building_number'];
+            if(@$parcel_target_machine_detail['address']['flat_number'] != ''){
+                $street_address .= '/'.$parcel_target_machine_detail['address']['flat_number'];
             }
-            //$db->next_record();
+
+            if($dba->f('count') == 0){
+                $dbi = new ps_DB;
+                $q  = "SELECT * FROM #__{vm}_user_info WHERE user_id = '". $d['user_id'] . "'";
+                $dbi->query($q);
+
+                $user_info_st = array();
+                $user_info_bt = array();
+                while( $dbi->next_record() ) {
+                    echo $dbi->f('address_type');
+                    if($dbi->f('address_type') == 'ST'){
+                        $user_info_st = $dbi->loadAssocList('user_id');
+                        break;
+                    }else{
+                        $user_info_bt = $dbi->loadAssocList('user_id');
+                    }
+                }
+
+                $user_info = !empty($user_info_st)?$user_info_st:$user_info_bt;
+                $user_info = $user_info[$d['user_id']];
+
+                $fields = array(
+                    'order_id' => $order_id,
+                    'user_id' => $d['user_id'],
+                    'address_type' => 'ST',
+                    'address_type_name' => $user_info['address_type_name'],
+                    'company' => $user_info['company'],
+                    'title' => $user_info['title'],
+                    'last_name' => $user_info['last_name'],
+                    'first_name' => $user_info['first_name'],
+                    'middle_name' => $user_info['middle_name'],
+                    'phone_1' => $user_info['phone_1'],
+                    'phone_2' => $user_info['phone_2'],
+                    'fax' => $user_info['fax'],
+                    'address_1' => $street_address,
+                    'address_2' => $user_info['address_2'],
+                    'city' => $parcel_target_machine_detail['address']['city'],
+                    'state' => $parcel_target_machine_detail['address']['province'],
+                    'country' => $user_info['country'],
+                    'zip' => $parcel_target_machine_detail['address']['post_code'],
+                    'user_email' => $user_info['user_email'],
+                    'bank_account_nr' => $user_info['bank_account_nr'],
+                    'bank_name' => $user_info['bank_name'],
+                    'bank_sort_code' => $user_info['bank_sort_code'],
+                    'bank_iban' => $user_info['bank_iban'],
+                    'bank_account_holder' => $user_info['bank_account_holder'],
+                    'bank_account_type' => $user_info['bank_account_type']
+                );
+
+                $db = new ps_DB;
+                $db->buildQuery( 'INSERT ', '#__{vm}_order_user_info', $fields);
+                $db->query();
+            }else{
+                $fields = array(
+                    'address_1' => $street_address,
+                    'city' => $parcel_target_machine_detail['address']['city'],
+                    'zip' => $parcel_target_machine_detail['address']['post_code'],
+                    'state' => $parcel_target_machine_detail['address']['province']
+                );
+                $db = new ps_DB;
+                $db->buildQuery( 'UPDATE ', '#__{vm}_order_user_info', $fields, "WHERE order_id='".$order_id."' AND address_type='ST");
+                $db->query();
+            }
+            //unset($_SESSION['easypack24']);
         }else{
             $vmLogger->err( 'Cannot create parcel' ) ;
         }
@@ -390,7 +519,8 @@ class easypack24 {
 
 
 	function get_tax_rate() {
-		require_once(CLASSPATH ."shipping/".$this->classname.".cfg.php");
+        global $d;
+  		require_once(CLASSPATH ."shipping/".$this->classname.".cfg.php");
 		if( intval(tax)== 0 )
 		return( 0 );
 		else {
@@ -403,13 +533,23 @@ class easypack24 {
 	function validate( $d ) {
         global $vmLogger;
 		$shipping_rate_id = $d["shipping_rate_id"];
+
+        if( !preg_match('/easypack24/', $shipping_rate_id)) {
+            return false;
+        }
+
+        if(isset($d['shipping_easypack24']['parcel_target_machine_id'])){
+            $_SESSION['easypack24']['shipping_easypack24']['parcel_target_machine_id'] = $d['shipping_easypack24']['parcel_target_machine_id'];
+        }
+
+        if(@$_SESSION['easypack24']['shipping_easypack24']['parcel_target_machine_id'] == ''){
+            $vmLogger->err('Select target machine');
+            return false;
+        }
+
         if(isset($d['shipping_easypack24']['receiver_phone'])){
             $_SESSION['easypack24']['shipping_easypack24']['receiver_phone'] = $d['shipping_easypack24']['receiver_phone'];
         }
-
-		if( !array_key_exists( $shipping_rate_id, $_SESSION )) {
-			//return false;
-		}
 
         if(!preg_match('/^[1-9]{1}\d{8}$/', $_SESSION['easypack24']['shipping_easypack24']['receiver_phone'])){
             $vmLogger->err( 'Mobile is invalid. Correct is e.g. 111222333. /^[1-9]{1}\d{8}$/' ) ;
