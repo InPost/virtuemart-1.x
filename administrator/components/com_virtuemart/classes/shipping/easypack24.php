@@ -93,76 +93,20 @@ class easypack24 {
         $dbv = new ps_DB;
         $dbv->query($q);
         while( $dbv->next_record() ) {
-            $max_dimensions[] = (float)$dbv->f("width").'x'.(float)$dbv->f("height").'x'.(float)$dbv->f("depth");
+            $product_dimensions[] = (float)$dbv->f("width").'x'.(float)$dbv->f("height").'x'.(float)$dbv->f("depth");
         }
 
-        $parcelSize = 'A';
-        if(!empty($max_dimensions)){
-            $maxDimensionFromConfigSizeA = explode('x', strtolower(trim(MAX_DIMENSION_A)));
-            $maxWidthFromConfigSizeA = (float)trim(@$maxDimensionFromConfigSizeA[0]);
-            $maxHeightFromConfigSizeA = (float)trim(@$maxDimensionFromConfigSizeA[1]);
-            $maxDepthFromConfigSizeA = (float)trim(@$maxDimensionFromConfigSizeA[2]);
-            // flattening to one dimension
-            $maxSumDimensionFromConfigSizeA = $maxWidthFromConfigSizeA + $maxHeightFromConfigSizeA + $maxDepthFromConfigSizeA;
+        $calculateDimension = easypack24Helper::calculateDimensions($product_dimensions, array(
+            MAX_DIMENSION_A, MAX_DIMENSION_B, MAX_DIMENSION_C
+        ));
 
-            $maxDimensionFromConfigSizeB = explode('x', strtolower(trim(MAX_DIMENSION_B)));
-            $maxWidthFromConfigSizeB = (float)trim(@$maxDimensionFromConfigSizeB[0]);
-            $maxHeightFromConfigSizeB = (float)trim(@$maxDimensionFromConfigSizeB[1]);
-            $maxDepthFromConfigSizeB = (float)trim(@$maxDimensionFromConfigSizeB[2]);
-            // flattening to one dimension
-            $maxSumDimensionFromConfigSizeB = $maxWidthFromConfigSizeB + $maxHeightFromConfigSizeB + $maxDepthFromConfigSizeB;
-
-            $maxDimensionFromConfigSizeC = explode('x', strtolower(trim(MAX_DIMENSION_C)));
-            $maxWidthFromConfigSizeC = (float)trim(@$maxDimensionFromConfigSizeC[0]);
-            $maxHeightFromConfigSizeC = (float)trim(@$maxDimensionFromConfigSizeC[1]);
-            $maxDepthFromConfigSizeC = (float)trim(@$maxDimensionFromConfigSizeC[2]);
-
-            if($maxWidthFromConfigSizeC == 0 || $maxHeightFromConfigSizeC == 0 || $maxDepthFromConfigSizeC == 0){
-                // bad format in admin configuration
-                $is_dimension = false;
-            }
-            // flattening to one dimension
-            $maxSumDimensionFromConfigSizeC = $maxWidthFromConfigSizeC + $maxHeightFromConfigSizeC + $maxDepthFromConfigSizeC;
-            $maxSumDimensionsFromProducts = 0;
-            foreach($max_dimensions as $max_dimension){
-                $dimension = explode('x', $max_dimension);
-                $width = trim(@$dimension[0]);
-                $height = trim(@$dimension[1]);
-                $depth = trim(@$dimension[2]);
-                if($width == 0 || $height == 0 || $depth){
-                    // empty dimension for product
-                    continue;
-                }
-
-                if(
-                    $width > $maxWidthFromConfigSizeC ||
-                    $height > $maxHeightFromConfigSizeC ||
-                    $depth > $maxDepthFromConfigSizeC
-                ){
-                    $is_dimension = false;
-                }
-
-                $maxSumDimensionsFromProducts = $maxSumDimensionsFromProducts + $width + $height + $depth;
-                if($maxSumDimensionsFromProducts > $maxSumDimensionFromConfigSizeC){
-                    $is_dimension = false;
-                }
-            }
-            if($maxSumDimensionsFromProducts <= $maxDimensionFromConfigSizeA){
-                $parcelSize = 'A';
-            }elseif($maxSumDimensionsFromProducts <= $maxDimensionFromConfigSizeB){
-                $parcelSize = 'B';
-            }elseif($maxSumDimensionsFromProducts <= $maxDimensionFromConfigSizeC){
-                $parcelSize = 'C';
-            }
-
-            if($is_dimension == false){
+        if(!$calculateDimension['isDimension']){
                 ?>
                 <input type="radio" name="shipping_rate_id" DISABLED id="easypack24" value="<?php $shipping; ?>"> InPost Parcel Lockers 24/7: <?php echo $CURRENCY_DISPLAY->getFullValue($Total_Shipping_Handling) ?> ( <font color="red"> Max dimension is: <?php echo MAX_DIMENSION_C ?></font>);
                 <?php
                     return true;
-            }
         }
-        $_SESSION['easypack24']['parcel_size'] = $parcelSize;
+        $_SESSION['easypack24']['parcel_size'] = $calculateDimension['parcelSize'];
 
         if($dbu->f("user_email") != ''){
             $_SESSION['easypack24']['user_email'] = $dbu->f("user_email");
@@ -364,7 +308,7 @@ class easypack24 {
         $parcel_status = 'Created';
         $parcel_detail = array(
             //'cod_amount' => Mage::getStoreConfig('carriers/easypack24/cod_amount'),
-            'description' => '',
+            'description' => 'Order number:'.$order_id,
             //'insurance_amount' => Mage::getStoreConfig('carriers/easypack24/insurance_amount'),
             'receiver' => array(
                 'email' => @$_SESSION['easypack24']['user_email'],
@@ -384,7 +328,7 @@ class easypack24 {
             'methodType' => 'POST',
             'params' => array(
                 //'cod_amount' => '',
-                'description' => '',
+                'description' => @$parcel_detail['description'],
                 //'insurance_amount' => '',
                 'receiver' => array(
                     'phone' => str_replace('mob:', '', @$parcel_detail['receiver']['phone']),

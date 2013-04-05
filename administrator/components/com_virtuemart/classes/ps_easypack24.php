@@ -17,6 +17,7 @@ class vm_ps_easypack24 {
         $countNonSticker = 0;
         $pdf = null;
         $parcelsCode = array();
+        $parcelsToPay = array();
 
         foreach ($parcelsIds as $key => $id) {
             $dbu = new ps_DB;
@@ -25,6 +26,9 @@ class vm_ps_easypack24 {
 
             if($dbu->f("parcel_id") != ''){
                 $parcelsCode[$id] = $dbu->f("parcel_id");
+                if($dbu->f("sticker_creation_date") == ''){
+                    $parcelsToPay[$id] = $dbu->f("parcel_id");
+                }
             }else{
                 continue;
             }
@@ -33,23 +37,24 @@ class vm_ps_easypack24 {
         if(empty($parcelsCode)){
             $vmLogger->err('Parcel ID is empty');
         }else{
+            if(!empty($parcelsToPay)){
+                $parcelApiPay = easypack24Helper::connectEasypack24(array(
+                    'url' => API_URL.'parcels/'.implode(';', $parcelsToPay).'/pay',
+                    'token' => API_KEY,
+                    'methodType' => 'POST',
+                    'params' => array(
+                    )
+                ));
 
-            $parcelApiPay = easypack24Helper::connectEasypack24(array(
-                'url' => API_URL.'parcels/'.implode(';', $parcelsCode).'/pay',
-                'token' => API_KEY,
-                'methodType' => 'POST',
-                'params' => array(
-                )
-            ));
-
-            if(@$parcelApiPay['info']['http_code'] != '204'){
-                $countNonSticker = count($parcelsIds);
-                if(!empty($parcelApiPay['result'])){
-                    foreach(@$parcelApiPay['result'] as $key => $error){
-                        $vmLogger->err('Parcel '.$key.' '.$error);
+                if(@$parcelApiPay['info']['http_code'] != '204'){
+                    $countNonSticker = count($parcelsIds);
+                    if(!empty($parcelApiPay['result'])){
+                        foreach(@$parcelApiPay['result'] as $key => $error){
+                            $vmLogger->err('Parcel '.$key.' '.$error);
+                        }
                     }
+                    #return;
                 }
-                #return;
             }
 
             $parcelApi = easypack24Helper::connectEasypack24(array(
@@ -62,7 +67,6 @@ class vm_ps_easypack24 {
                 )
             ));
         }
-
 
         if(@$parcelApi['info']['http_code'] != '200'){
             $countNonSticker = count($parcelsIds);
@@ -77,9 +81,11 @@ class vm_ps_easypack24 {
                     'parcel_status' => 'Prepared',
                     'sticker_creation_date' => date('Y-m-d H:i:s')
                 );
-                $db = new ps_DB;
-                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE id='".$parcelId."'");
-                $db->query();
+                if(isset($parcelsToPay[$parcelId])){
+                    $db = new ps_DB;
+                    $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE id='".$parcelId."'");
+                    $db->query();
+                }
                 $countSticker++;
             }
             $pdf = base64_decode(@$parcelApi['result']);
