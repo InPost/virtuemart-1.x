@@ -334,10 +334,12 @@ if( vmIsJoomla('1.0') && strstr( $_SERVER['PHP_SELF'], 'index3.php')) {
 					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=order.order_list") ?>"><?php echo $VM_LANG->_('PHPSHOP_ORDER_LIST_MNU') ?></a>
 					<hr />
 					</li>
+					<!--  start inpostparcels -->
 					<li class="item-smenu vmicon vmicon-16-content">
-					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=easypack24.easypack24_list") ?>">InPost Parcel Lockers 24/7</a>
+					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=inpostparcels.inpostparcels_list") ?>"><?php echo $VM_LANG->_('INPOSTPARCELS_NAME') ?></a>
 					<hr />
 					</li>
+					<!--  end inpostparcels -->
 					<li class="item-smenu vmicon vmicon-16-content">
 					<a href="<?php $sess->purl($_SERVER['PHP_SELF']."?pshop_mode=admin&amp;page=order.order_status_list") ?>"><?php echo $VM_LANG->_('PHPSHOP_ORDER_STATUS_LIST_MNU') ?></a>
 					</li>

@@ -1,13 +1,13 @@
 <?php
 
-class easypack24Helper
+class inpostparcelsHelper
 {
 
     public static function test(){
         return 'test';        
     }
 
-    public static function connectEasypack24($params = array()){
+    public static function connectInpostparcels($params = array()){
 
         $params = array_merge(
             array(
@@ -116,7 +116,7 @@ class easypack24Helper
         $parcelSize = 'A';
         $is_dimension = true;
 
-        if(!empty($max_dimensions)){
+        if(!empty($product_dimensions)){
             $maxDimensionFromConfigSizeA = explode('x', strtolower(trim($config['MAX_DIMENSION_A'])));
             $maxWidthFromConfigSizeA = (float)trim(@$maxDimensionFromConfigSizeA[0]);
             $maxHeightFromConfigSizeA = (float)trim(@$maxDimensionFromConfigSizeA[1]);
@@ -175,10 +175,60 @@ class easypack24Helper
             }
         }
 
+        $parcelSizeRemap = array(
+            'UK' => array(
+                'A' => 'S',
+                'B' => 'M',
+                'C' => 'L'
+            ),
+            'PL' => array(
+                'A' => 'M',
+                'B' => 'S',
+                'C' => 'D'
+            )
+        );
+
         return array(
+            //'parcelSize' => $parcelSizeRemap[self::getCurrentApi()][$parcelSize],
             'parcelSize' => $parcelSize,
             'isDimension' => $is_dimension
         );
     }
-    
+
+    public static function getCurrentApi(){
+        $currentApi = 'UK';
+
+        if(ALLOWED_COUNTRY && !is_array(ALLOWED_COUNTRY)){
+            $currentApi = ALLOWED_COUNTRY;
+            if($currentApi == 'GB'){
+                $currentApi = 'UK';
+            }
+        }
+
+        return $currentApi;
+    }
+
+    public static function setLang(){
+        global $mosConfig_absolute_path;
+
+        $jlang = JFactory::getLanguage();
+
+        $file = 'english';
+        switch($jlang->getDefault()){
+            case 'en-GB';
+                $file = 'english';
+                break;
+            case 'pl-PL';
+                $file = 'polish';
+                break;
+        }
+
+        if(file_exists(CLASSPATH.'shipping/inpostparcels/languages/'.$file.'.php')){
+            require_once(CLASSPATH.'shipping/inpostparcels/languages/'.$file.'.php');
+        }else{
+            require_once($mosConfig_absolute_path.'/administrator/components/com_virtuemart/classes/shipping/inpostparcels/languages/'.$file.'.php');
+        }
+    }
+
+
 }

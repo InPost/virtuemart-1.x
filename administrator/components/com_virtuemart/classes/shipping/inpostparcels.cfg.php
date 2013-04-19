@@ -9,4 +9,5 @@ define ('MAX_DIMENSION_A', '8x38x64');
 define ('MAX_DIMENSION_B', '19x38x64');
 define ('MAX_DIMENSION_C', '41x38x64');
 define ('ALLOWED_COUNTRY', 'UK');
+define ('SHOP_CITIES', '');
 ?>

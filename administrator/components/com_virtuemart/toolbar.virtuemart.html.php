@@ -300,21 +300,23 @@ class MENU_virtuemart {
 		switch( $page ) {
 
 
-			case "easypack24.easypack24_list":
-				$alt = "&nbsp;". 'Parcel stickers in pdf format';
-                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassStickers' );
+  			// start inpostparcels
+			case "inpostparcels.inpostparcels_list":
+				$alt = "&nbsp;". $VM_LANG->_('INPOSTPARCELS_VIEW_BUTTON_1');
+                vmMenuBar::custom( "", "inpostparcels.inpostparcels_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'inpostparcelsMassStickers' );
                 vmMenuBar::spacer();
 
-                $alt = "&nbsp;". 'Parcel refresh status';
-                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassRefreshStatus' );
+                $alt = "&nbsp;". $VM_LANG->_('INPOSTPARCELS_VIEW_BUTTON_2');
+                vmMenuBar::custom( "", "inpostparcels.inpostparcels_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'inpostparcelsMassRefreshStatus' );
                 vmMenuBar::spacer();
 
-                $alt = "&nbsp;". 'Parcel cancel';
-                vmMenuBar::custom( "", "easypack24.easypack24_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'easypack24MassCancel' );
+                $alt = "&nbsp;". $VM_LANG->_('INPOSTPARCELS_VIEW_BUTTON_3');
+                vmMenuBar::custom( "", "inpostparcels.inpostparcels_list", $vmIcons['new_icon'], $vmIcons['new_icon2'], $alt, true, 'adminForm', 'inpostparcelsMassCancel' );
                 vmMenuBar::spacer();
 
                 vmMenuBar::divider();
                 break;
+  			// end inpostparcels
 
 			case "product.product_list":
 			

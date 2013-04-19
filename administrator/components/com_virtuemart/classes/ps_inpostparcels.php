@@ -1,17 +1,18 @@
 <?php
 if( !defined( '_VALID_MOS' ) && !defined( '_JEXEC' ) ) die( 'Direct Access to '.basename(__FILE__).' is not allowed.' );
 
-require_once(CLASSPATH ."shipping/easypack24/helpers/easypack24Helper.php");
-require_once(CLASSPATH ."shipping/easypack24.cfg.php");
+require_once(CLASSPATH ."shipping/inpostparcels/helpers/inpostparcelsHelper.php");
+require_once(CLASSPATH ."shipping/inpostparcels.cfg.php");
 
-class vm_ps_easypack24 {
+class vm_ps_inpostparcels {
 
 
     function mass_stickers(&$d) {
-        global $vmLogger;
+        global $vmLogger, $VM_LANG;
         $conf =& JFactory::getConfig();
         $db_prefix = $conf->getValue('config.dbprefix');
         $parcelsIds = vmGet($d,"id");
+        inpostparcelsHelper::setLang();
 
         $countSticker = 0;
         $countNonSticker = 0;
@@ -21,7 +22,7 @@ class vm_ps_easypack24 {
 
         foreach ($parcelsIds as $key => $id) {
             $dbu = new ps_DB;
-            $q  = "SELECT * FROM ".$db_prefix."order_shipping_easypack24 WHERE id = '". $id . "'";
+            $q  = "SELECT * FROM ".$db_prefix."order_shipping_inpostparcels WHERE id = '". $id . "'";
             $dbu->query($q);
 
             if($dbu->f("parcel_id") != ''){
@@ -35,10 +36,10 @@ class vm_ps_easypack24 {
         }
 
         if(empty($parcelsCode)){
-            $vmLogger->err('Parcel ID is empty');
+            $vmLogger->err($VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_7'));
         }else{
             if(!empty($parcelsToPay)){
-                $parcelApiPay = easypack24Helper::connectEasypack24(array(
+                $parcelApiPay = inpostparcelsHelper::connectInpostparcels(array(
                     'url' => API_URL.'parcels/'.implode(';', $parcelsToPay).'/pay',
                     'token' => API_KEY,
                     'methodType' => 'POST',
@@ -57,7 +58,7 @@ class vm_ps_easypack24 {
                 }
             }
 
-            $parcelApi = easypack24Helper::connectEasypack24(array(
+            $parcelApi = inpostparcelsHelper::connectInpostparcels(array(
                 'url' => API_URL.'stickers/'.implode(';', $parcelsCode),
                 'token' => API_KEY,
                 'methodType' => 'GET',
@@ -83,7 +84,7 @@ class vm_ps_easypack24 {
                 );
                 if(isset($parcelsToPay[$parcelId])){
                     $db = new ps_DB;
-                    $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE id='".$parcelId."'");
+                    $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_inpostparcels', $fields,  "WHERE id='".$parcelId."'");
                     $db->query();
                 }
                 $countSticker++;
@@ -93,13 +94,13 @@ class vm_ps_easypack24 {
 
         if ($countNonSticker) {
             if ($countNonSticker) {
-                $vmLogger->err($countNonSticker.' sticker(s) cannot be generated');
+                $vmLogger->err($countNonSticker.$VM_LANG->_('INPOSTPARCELS_MSG_STICKER_1'));
             } else {
-                $vmLogger->err('The sticker(s) cannot be generated');
+                $vmLogger->err($VM_LANG->_('INPOSTPARCELS_MSG_STICKER_2'));
             }
         }
         if ($countSticker) {
-            $vmLogger->info($countSticker.' sticker(s) have been generated.');
+            $vmLogger->info($countSticker.$VM_LANG->_('INPOSTPARCELS_MSG_STICKER_3'));
         }
 
         if(!is_null($pdf)){
@@ -110,10 +111,11 @@ class vm_ps_easypack24 {
     }
 
     function mass_refresh_status(&$d) {
-        global $vmLogger;
+        global $vmLogger, $VM_LANG;
         $conf =& JFactory::getConfig();
         $db_prefix = $conf->getValue('config.dbprefix');
         $parcelsIds = vmGet($d,"id");
+        inpostparcelsHelper::setLang();
 
         $countRefreshStatus = 0;
         $countNonRefreshStatus = 0;
@@ -121,7 +123,7 @@ class vm_ps_easypack24 {
         $parcelsCode = array();
         foreach ($parcelsIds as $key => $id) {
             $dbu = new ps_DB;
-            $q  = "SELECT * FROM ".$db_prefix."order_shipping_easypack24 WHERE id = '". $id . "'";
+            $q  = "SELECT * FROM ".$db_prefix."order_shipping_inpostparcels WHERE id = '". $id . "'";
             $dbu->query($q);
 
             if($dbu->f("parcel_id") != ''){
@@ -132,9 +134,9 @@ class vm_ps_easypack24 {
         }
 
         if(empty($parcelsCode)){
-            $vmLogger->err('Parcel ID is empty');
+            $vmLogger->err($VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_7'));
         }else{
-            $parcelApi = easypack24Helper::connectEasypack24(array(
+            $parcelApi = inpostparcelsHelper::connectInpostparcels(array(
                 'url' => API_URL.'parcels/'.implode(';', $parcelsCode),
                 'token' => API_KEY,
                 'methodType' => 'GET',
@@ -158,7 +160,7 @@ class vm_ps_easypack24 {
                     'parcel_status' => @$parcel->status
                 );
                 $db = new ps_DB;
-                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE parcel_id='".@$parcel->id."'");
+                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_inpostparcels', $fields,  "WHERE parcel_id='".@$parcel->id."'");
                 $db->query();
                 $countRefreshStatus++;
             }
@@ -166,21 +168,22 @@ class vm_ps_easypack24 {
 
         if ($countNonRefreshStatus) {
             if ($countNonRefreshStatus) {
-                $vmLogger->err($countNonRefreshStatus.' parcel status cannot be refresh');
+                $vmLogger->err($countNonRefreshStatus.$VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_1'));
             } else {
-                $vmLogger->err($countNonRefreshStatus.' The parcel status cannot be refresh');
+                $vmLogger->err($countNonRefreshStatus.$VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_2'));
             }
         }
         if ($countRefreshStatus) {
-            $vmLogger->info($countRefreshStatus.' parcel status have been refresh.');
+            $vmLogger->info($countRefreshStatus.$VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_3'));
         }
     }
 
     function mass_cancel(&$d) {
-        global $vmLogger;
+        global $vmLogger, $VM_LANG;
         $conf =& JFactory::getConfig();
         $db_prefix = $conf->getValue('config.dbprefix');
         $parcelsIds = vmGet($d,"id");
+        inpostparcelsHelper::setLang();
 
         $countCancel = 0;
         $countNonCancel = 0;
@@ -188,7 +191,7 @@ class vm_ps_easypack24 {
         $parcelsCode = array();
         foreach ($parcelsIds as $key => $id) {
             $dbu = new ps_DB;
-            $q  = "SELECT * FROM ".$db_prefix."order_shipping_easypack24 WHERE id = '". $id . "'";
+            $q  = "SELECT * FROM ".$db_prefix."order_shipping_inpostparcels WHERE id = '". $id . "'";
             $dbu->query($q);
 
             if($dbu->f("parcel_id") != ''){
@@ -199,10 +202,10 @@ class vm_ps_easypack24 {
         }
 
         if(empty($parcelsCode)){
-            $vmLogger->err('Parcel ID is empty');
+            $vmLogger->err($VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_7'));
         }else{
             foreach($parcelsCode as $id => $parcelId){
-                $parcelApi = easypack24Helper::connectEasypack24(array(
+                $parcelApi = inpostparcelsHelper::connectInpostparcels(array(
                     'url' => API_URL.'parcels',
                     'token' => API_KEY,
                     'methodType' => 'PUT',
@@ -231,7 +234,7 @@ class vm_ps_easypack24 {
                             'parcel_status' => @$parcel->status
                         );
                         $db = new ps_DB;
-                        $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE parcel_id='".@$parcel->id."'");
+                        $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_inpostparcels', $fields,  "WHERE parcel_id='".@$parcel->id."'");
                         $db->query();
                         $countCancel++;
                     }
@@ -241,48 +244,81 @@ class vm_ps_easypack24 {
 
         if ($countNonCancel) {
             if ($countNonCancel) {
-                $vmLogger->err($countNonCancel.' parcel status cannot be cancel');
+                $vmLogger->err($countNonCancel.$VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_4'));
             } else {
-                $vmLogger->err('The parcel status cannot be cancel');
+                $vmLogger->err($VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_5'));
             }
         }
         if ($countCancel) {
-            $vmLogger->info($countNonCancel.' parcel status have been cancel.');
+            $vmLogger->info($countNonCancel.$VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_6'));
         }
     }
 
     function update(&$d) {
-        global $vmLogger;
+        global $vmLogger, $VM_LANG;
         $conf =& JFactory::getConfig();
         $db_prefix = $conf->getValue('config.dbprefix');
         $id = vmGet($d,"id");
+        inpostparcelsHelper::setLang();
 
         try {
             $postData = $d;
             $db = new ps_DB;
-            $q = "SELECT * FROM ".$db_prefix."order_shipping_easypack24 WHERE id='$id'";
+            $q = "SELECT * FROM ".$db_prefix."order_shipping_inpostparcels WHERE id='$id'";
             $db->query($q);
             $db->next_record();
 
             $parcelTargetMachineDetailDb = json_decode($db->f("parcel_target_machine_detail"));
             $parcelDetailDb = json_decode($db->f("parcel_detail"));
 
-            // update Inpost parcel
-            $params = array(
-                'url' => API_URL.'parcels',
-                'token' => API_KEY,
-                'methodType' => 'PUT',
-                'params' => array(
-                    'description' => !isset($postData['parcel_description']) || $postData['parcel_description'] == @$parcelDetailDb->description?null:$postData['parcel_description'],
-                    'id' => $postData['parcel_id'],
-                    'size' => !isset($postData['parcel_size']) || $postData['parcel_size'] == @$parcelDetailDb->size?null:$postData['parcel_size'],
-                    'status' => !isset($postData['parcel_status']) || $postData['parcel_status'] == $db->f("parcel_status")?null:$postData['parcel_status'],
-                    //'target_machine' => !isset($postData['parcel_target_machine_id']) || $postData['parcel_target_machine_id'] == $db->f("parcel_target_machine_id")?null:$postData['parcel_target_machine_id']
-                )
-            );
-            $parcelApi = easypack24Helper::connectEasypack24($params);
+            if($db->f('parcel_id') != ''){
+                // update Inpost parcel
+                $params = array(
+                    'url' => API_URL.'parcels',
+                    'token' => API_KEY,
+                    'methodType' => 'PUT',
+                    'params' => array(
+                        'description' => !isset($postData['parcel_description']) || $postData['parcel_description'] == @$parcelDetailDb->description?null:$postData['parcel_description'],
+                        'id' => $postData['parcel_id'],
+                        'size' => !isset($postData['parcel_size']) || $postData['parcel_size'] == @$parcelDetailDb->size?null:$postData['parcel_size'],
+                        'status' => !isset($postData['parcel_status']) || $postData['parcel_status'] == $db->f('parcel_status')?null:$postData['parcel_status'],
+                        //'target_machine' => !isset($postData['parcel_target_machine_id']) || $postData['parcel_target_machine_id'] == $db->f('parcel_target_machine_id')?null:$postData['parcel_target_machine_id']
+                    )
+                );
+            }else{
+                // create Inpost parcel e.g.
+                $params = array(
+                    'url' => API_URL.'parcels',
+                    'token' => API_KEY,
+                    'methodType' => 'POST',
+                    'params' => array(
+                        'description' => @$postData['parcel_description'],
+                        'description2' => 'virtuemart-1.x',
+                        'receiver' => array(
+                            'phone' => @$postData['parcel_receiver_phone'],
+                            'email' => @$postData['parcel_receiver_email']
+                        ),
+                        'size' => @$postData['parcel_size'],
+                        'tmp_id' => @$postData['parcel_tmp_id'],
+                        'target_machine' => @$postData['parcel_target_machine_id']
+                    )
+                );
 
-            if(@$parcelApi['info']['http_code'] != '204'){
+                switch($db->f('api_source')){
+                    case 'PL':
+                        $insurance_amount = $_SESSION['inpostparcels']['parcelInsurancesAmount'];
+                        $params['params']['cod_amount'] = @$postData['parcel_cod_amount'];
+                        if(@$postData['parcel_insurance_amount'] != ''){
+                            $params['params']['insurance_amount'] = @$insurance_amount[@$postData['parcel_insurance_amount']];
+                        }
+                        $params['params']['source_machine'] = @$postData['parcel_source_machine_id'];
+                        break;
+                }
+            }
+
+            $parcelApi = inpostparcelsHelper::connectInpostparcels($params);
+
+            if(@$parcelApi['info']['http_code'] != '204' && @$parcelApi['info']['http_code'] != '201'){
                 if(!empty($parcelApi['result'])){
                     foreach(@$parcelApi['result'] as $key => $error){
                         if(is_array($error)){
@@ -294,29 +330,66 @@ class vm_ps_easypack24 {
                         }
                     }
                 }
-                return;
+                return false;
             }else{
-                $fields = array(
-                    'parcel_status' => isset($postData['parcel_status'])?$postData['parcel_status']:$db->f("parcel_status"),
-                    'parcel_detail' => json_encode(array(
-                        'description' => $postData['parcel_description'],
-                        'receiver' => array(
-                            'email' => $parcelDetailDb->receiver->email,
-                            'phone' => $parcelDetailDb->receiver->phone
-                        ),
-                        'size' => isset($postData['parcel_size'])?$postData['parcel_size']:@$parcelDetailDb->size,
-                        'tmp_id' => $parcelDetailDb->tmp_id,
-                    ))
-                );
-                $db = new ps_DB;
-                $db->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_easypack24', $fields,  "WHERE id='".$id."'");
-                $db->query();
+                if($db->f('parcel_id') != ''){
+                    $parcelDetail = $parcelDetailDb;
+                    $parcelDetail->description = $postData['parcel_description'];
+                    $parcelDetail->size = $postData['parcel_size'];
+                    $parcelDetail->status = $postData['parcel_status'];
+
+                    $fields = array(
+                        'parcel_status' => isset($postData['parcel_status'])?$postData['parcel_status']:$db->f('parcel_status'),
+                        'parcel_detail' => json_encode($parcelDetail),
+                        'variables' => json_encode(array())
+                    );
+
+                    $dbi = new ps_DB;
+                    $dbi->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_inpostparcels', $fields,  "WHERE id='".$id."'");
+                    $dbi->query();
+                }else{
+//                    $parcelApi = inpostparcelsHelper::connectInpostparcels(
+//                        array(
+//                            'url' => $parcelApi['info']['redirect_url'],
+//                            'token' => constant('MODULE_SHIPPING_INPOSTPARCELS_API_KEY'),
+//                            'ds' => '&',
+//                            'methodType' => 'GET',
+//                            'params' => array(
+//                            )
+//                        )
+//                    );
+
+                    $fields = array(
+                        'parcel_id' => $parcelApi['result']->id,
+                        'parcel_status' => 'Created',
+                        'parcel_detail' => json_encode($params['params']),
+                        'parcel_target_machine_id' => isset($postData['parcel_target_machine_id'])?$postData['parcel_target_machine_id']:$db->f('parcel_target_machine_id'),
+                        'parcel_target_machine_detail' => $db->f('parcel_target_machine_detail'),
+                        'variables' => json_encode(array())
+                    );
+
+                    if($db->f('parcel_target_machine_id') != $postData['parcel_target_machine_id']){
+                        $parcelApi = inpostparcelsHelper::connectInpostparcels(
+                            array(
+                                'url' => API_URL.'machines/'.$postData['parcel_target_machine_id'],
+                                'token' => API_KEY,
+                                'methodType' => 'GET',
+                                'params' => array(
+                                )
+                            )
+                        );
+
+                        $fields['parcel_target_machine_detail'] = json_encode($parcelApi['result']);
+                    }
+                    $dbi = new ps_DB;
+                    $dbi->buildQuery( 'UPDATE ', $db_prefix.'order_shipping_inpostparcels', $fields,  "WHERE id='".$id."'");
+                    $dbi->query();
+                }
             }
-            $vmLogger->info('Parcel modified');
+            $vmLogger->info($VM_LANG->_('INPOSTPARCELS_MSG_PARCEL_MODIFIED'));
             return;
         } catch (Exception $e) {
             $vmLogger->err($e->getMessage());
-            //Mage::getSingleton('adminhtml/session')->setEasypackData($);
             return;
         }
     }
@@ -334,9 +407,9 @@ if (defined('VM_ALLOW_EXTENDED_CLASSES') && defined('VM_THEMEPATH') && VM_ALLOW_
 	include_once(VM_THEMEPATH.'user_class/'.basename(__FILE__));
 } else {
 	// Otherwise we have to use the original classname to extend the core-class
-	class ps_easypack24 extends vm_ps_easypack24 {}
+	class ps_inpostparcels extends vm_ps_inpostparcels {}
 }
 
 
-$ps_easypack24 = new ps_easypack24;
+$ps_inpostparcels = new ps_inpostparcels;
 ?>
