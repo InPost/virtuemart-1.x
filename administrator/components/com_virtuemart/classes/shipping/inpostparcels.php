@@ -1,12 +1,13 @@
 <script type="text/javascript" src="<?php echo URL?>/administrator/components/com_virtuemart/classes/shipping/inpostparcels/js/jquery-1.6.4.min.js"></script>
 <!--<script type="text/javascript" src="--><?php //echo URL?><!--/administrator/components/com_virtuemart/classes/shipping/inpostparcels/js/inpostparcels/noconflict.js"></script>-->
-<script type="text/javascript" src="https://geowidget.inpost.co.uk/dropdown.php?field_to_update=name&field_to_update2=address&user_function=user_function"></script>
 
 <?php
 if( !defined( '_VALID_MOS' ) && !defined( '_JEXEC' ) ) die( 'Direct Access to '.basename(__FILE__).' is not allowed.' );
 
 require_once(CLASSPATH ."shipping/inpostparcels/helpers/inpostparcelsHelper.php");
-
+?>
+<script type="text/javascript" src="<?php echo inpostparcelsHelper::getGeowidgetUrl(); ?>"></script>
+<?
 inpostparcelsHelper::setLang();
 
 class inpostparcels {
@@ -130,13 +131,22 @@ class inpostparcels {
 
         // get machines
         require_once(CLASSPATH ."shipping/inpostparcels/helpers/inpostparcelsHelper.php");
+
+        $machine_params = array();
+        switch(inpostparcelsHelper::getCurrentApi()){
+            case 'PL':
+                $machine_params['payment_available'] = true;
+                break;
+            case 'UK':
+                break;
+        }
+
         $allMachines = inpostparcelsHelper::connectInpostparcels(
             array(
                 'url' => API_URL.'machines',
                 'token' => API_KEY,
                 'methodType' => 'GET',
-                'params' => array(
-                )
+                'params' => $machine_params
             )
         );
 
@@ -211,10 +221,10 @@ class inpostparcels {
         <input type="hidden" id="box_machine_town" name="box_machine_town" disabled="disabled" />
         <input type="hidden" id="address" name="address" disabled="disabled" />
         <br>&nbsp; &nbsp; &nbsp; &nbsp;
-        <a href="#" onclick="openMap(); return false;"><?php echo $VM_LANG->_('INPOSTPARCELS_MAP') ?></a>&nbsp|&nbsp<input type="checkbox" name="show_all_machines"> <?php echo $VM_LANG->_('INPOSTPARCELS_SHOW_TERMINAL') ?>
+        <a href="#" onclick="openMap(); return false;"><?php echo $VM_LANG->_('INPOSTPARCELS_MAP') ?></a>&nbsp|&nbsp<input type="checkbox" name="show_all_machines"> <?php echo $VM_LANG->_('INPOSTPARCELS_SHOW_TERMINALS') ?>
         <br>
         <br>&nbsp; &nbsp; &nbsp; &nbsp;<b><?php echo $VM_LANG->_('INPOSTPARCELS_MOB_EXAMPLE') ?>: </b>
-        <br>&nbsp; &nbsp; &nbsp; &nbsp;(07)<input type='text' onChange="choose_from_dropdown()" name='shipping_inpostparcels[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="inpostparcels_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_inpostparcels']['receiver_phone']?@$_POST['shipping_inpostparcels']['receiver_phone']:$phone_from_db; ?>' />
+        <br>&nbsp; &nbsp; &nbsp; &nbsp;<?php echo $VM_LANG->_('INPOSTPARCELS_MOB_PREFIX') ?><input type='text' onChange="choose_from_dropdown()" name='shipping_inpostparcels[receiver_phone]' title="mobile /^[1-9]{1}\d{8}$/" id="inpostparcels_phone" title="mobile /^[1-9]{1}\d{8}$/" value='<?php echo @$_POST['shipping_inpostparcels']['receiver_phone']?@$_POST['shipping_inpostparcels']['receiver_phone']:$phone_from_db; ?>' />
 
         <script type="text/javascript">
             function user_function(value) {

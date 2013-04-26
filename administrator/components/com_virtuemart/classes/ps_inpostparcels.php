@@ -293,7 +293,7 @@ class vm_ps_inpostparcels {
                     'methodType' => 'POST',
                     'params' => array(
                         'description' => @$postData['parcel_description'],
-                        'description2' => 'virtuemart-1.x',
+                        'description2' => 'virtuemart-1.x-'.inpostparcelsHelper::getVersion(),
                         'receiver' => array(
                             'phone' => @$postData['parcel_receiver_phone'],
                             'email' => @$postData['parcel_receiver_email']
@@ -309,7 +309,7 @@ class vm_ps_inpostparcels {
                         $insurance_amount = $_SESSION['inpostparcels']['parcelInsurancesAmount'];
                         $params['params']['cod_amount'] = @$postData['parcel_cod_amount'];
                         if(@$postData['parcel_insurance_amount'] != ''){
-                            $params['params']['insurance_amount'] = @$insurance_amount[@$postData['parcel_insurance_amount']];
+                            $params['params']['insurance_amount'] = @$postData['parcel_insurance_amount'];
                         }
                         $params['params']['source_machine'] = @$postData['parcel_source_machine_id'];
                         break;

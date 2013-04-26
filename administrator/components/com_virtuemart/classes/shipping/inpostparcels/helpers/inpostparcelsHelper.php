@@ -196,14 +196,16 @@ class inpostparcelsHelper
     }
 
     public static function getCurrentApi(){
-        $currentApi = 'UK';
+        require_once(CLASSPATH ."shipping/inpostparcels.cfg.php");
 
+        $currentApi = 'UK';
         if(ALLOWED_COUNTRY && !is_array(ALLOWED_COUNTRY)){
             $currentApi = ALLOWED_COUNTRY;
             if($currentApi == 'GB'){
                 $currentApi = 'UK';
             }
         }
+
 
         return $currentApi;
     }
@@ -214,7 +216,7 @@ class inpostparcelsHelper
         $jlang = JFactory::getLanguage();
 
         $file = 'english';
-        switch($jlang->getDefault()){
+        switch($jlang->getTag()){
             case 'en-GB';
                 $file = 'english';
                 break;
@@ -230,5 +232,22 @@ class inpostparcelsHelper
         }
     }
 
+    public static function getVersion(){
+        return '1.0.0';
+    }
+
+    public static function getGeowidgetUrl(){
+
+        switch(self::getCurrentApi()){
+            case 'UK':
+                return 'https://geowidget.inpost.co.uk/dropdown.php?field_to_update=name&field_to_update2=address&user_function=user_function';
+                break;
+
+            case 'PL':
+                return 'https://geowidget.inpost.pl/dropdown.php?field_to_update=name&field_to_update2=address&user_function=user_function';
+                break;
+        }
+
+    }
 
 }
